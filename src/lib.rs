@@ -17,8 +17,7 @@
 //! (https://github.com/hwchen/secret-service-rs/issues/9)
 //!
 //! - auditwheel: Reimplements the more important part of the auditwheel
-//! package in rust. Every  wheel is check unless [skip_auditwheel](BuildContext.skip_auditwheel) is
-//! set to true.
+//! package in rust.
 //!
 //! - human-panic (off by default): Adds human-panic, pulling in some outdated dependencies
 //! (https://github.com/rust-clique/human-panic/pull/47)
@@ -35,7 +34,7 @@ pub use crate::compile::compile;
 pub use crate::develop::develop;
 pub use crate::metadata::{Metadata21, WheelMetadata};
 pub use crate::python_interpreter::PythonInterpreter;
-pub use crate::target::Target;
+pub use crate::target::{Manylinux, Target};
 #[cfg(feature = "upload")]
 pub use {
     crate::registry::Registry,

@@ -13,6 +13,7 @@ use crate::cargo_toml::CargoTomlMetadata;
 use crate::cargo_toml::CargoTomlMetadataPyo3Pack;
 use crate::BuildContext;
 use crate::CargoToml;
+use crate::Manylinux;
 use crate::Metadata21;
 use crate::PythonInterpreter;
 use crate::Target;
@@ -21,6 +22,17 @@ use crate::Target;
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone, Eq, PartialEq)]
 #[serde(default)]
 pub struct BuildOptions {
+    /// Whether to use the the manylinux and check compliance (on), use it but don't
+    /// check compliance (no-auditwheel) or use the native linux tag (off)
+    #[structopt(
+        long = "manylinux",
+        raw(
+            possible_values = r#"&["on", "off", "no-auditwheel"]"#,
+            case_insensitive = "true",
+            default_value = r#""on""#
+        )
+    )]
+    pub manylinux: Manylinux,
     #[structopt(short = "i", long = "interpreter")]
     /// The python versions to build wheels for, given as the names of the
     /// interpreters. Uses autodiscovery if not explicitly set.
@@ -41,7 +53,7 @@ pub struct BuildOptions {
     /// directory in the project's target directory
     #[structopt(short = "o", long = "out", parse(from_os_str))]
     pub out: Option<PathBuf>,
-    /// Don't check for manylinux compliance
+    /// [deprecated, use manylinux instead] Don't check for manylinux compliance
     #[structopt(long = "skip-auditwheel")]
     pub skip_auditwheel: bool,
     /// The --target option for cargo
@@ -62,6 +74,7 @@ pub struct BuildOptions {
 impl Default for BuildOptions {
     fn default() -> Self {
         BuildOptions {
+            manylinux: Manylinux::On,
             interpreter: vec![],
             bindings: None,
             manifest_path: PathBuf::from("Cargo.toml"),
@@ -146,6 +159,13 @@ impl BuildOptions {
 
         let rustc_extra_args = split_extra_args(&self.rustc_extra_args)?;
 
+        let manylinux = if self.skip_auditwheel {
+            eprintln!("--skip-auditwheel is deprecated, use --manylinux=no-auditwheel");
+            Manylinux::NoAuditwheel
+        } else {
+            self.manylinux
+        };
+
         Ok(BuildContext {
             target,
             bridge,
@@ -156,7 +176,7 @@ impl BuildOptions {
             out: wheel_dir,
             release,
             strip,
-            skip_auditwheel: self.skip_auditwheel,
+            manylinux,
             cargo_extra_args,
             rustc_extra_args,
             interpreter,
